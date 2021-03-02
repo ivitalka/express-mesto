@@ -1,15 +1,38 @@
-const path = require('path');
-const getDataFromFile = require('../helpers/files');
+const CardModel = require('../models/card');
 
-const dataPath = path.join(__dirname, '..', 'data', 'cards.json');
+const getCards = (req, res) => CardModel.find({})
+  .then((cards) => res.status(200).send(cards))
+  .catch(() => res.status(500).send({ error: 'Ошибка сервера' }));
 
-const getCards = (req, res) => getDataFromFile(dataPath)
-  .then((cards) => {
-    if (!cards) {
-      return res.status(500).send({ message: 'Запрашиваемый ресурс не найден' });
+const createCard = (req, res) => CardModel.create({ ...req.body, owner: req.user._id })
+  .then((card) => res.status(200).send(card))
+  .catch((err) => {
+    if (err.name === 'ValidationError') {
+      res.status(400).send({ message: 'Некорректные данные' });
     }
-    return res.status(200).send(cards);
-  })
-  .catch((err) => res.status(400).send(err));
+    res.status(500).send({ message: 'Ошибка сервера' });
+  });
 
-module.exports = getCards;
+const deleteCard = (req, res) => CardModel.findByIdAndRemove(req.params._id, { new: true })
+  .then(() => res.status(200).send({ message: 'Карточка удалена' }))
+  .catch(() => res.status(500).send({ message: 'Ошибка сервера' }));
+
+const likeCard = (req, res) => CardModel.findByIdAndUpdate(
+  req.params._id,
+  { $addToSet: { likes: req.user._id } },
+  { new: true },
+)
+  .then((card) => res.status(200).send(card))
+  .catch((err) => res.status(500).send(err));
+
+const dislikeCard = (req, res) => CardModel.findByIdAndUpdate(
+  req.params._id,
+  { $pull: { likes: req.user._id } },
+  { new: true },
+)
+  .then((card) => res.status(200).send(card))
+  .catch(() => res.status(500).send({ message: 'Ошибка сервера' }));
+
+module.exports = {
+  getCards, createCard, deleteCard, likeCard, dislikeCard,
+};

@@ -1,30 +1,51 @@
-const path = require('path');
-const getDataFromFile = require('../helpers/files');
+const UserModel = require('../models/user');
 
-const dataPath = path.join(__dirname, '..', 'data', 'users.json');
+const getUsers = (req, res) => UserModel.find({})
+  .then((users) => res.status(200).send(users))
+  .catch(() => res.status(500).send({ error: 'Ошибка сервера' }));
 
-const getUsers = (req, res) => getDataFromFile(dataPath)
-  .then((users) => {
-    if (!users) {
-      return res.status(500).send({ message: 'Запрашиваемый ресурс не найден' });
+const getProfile = (req, res) => UserModel.findById(req.params._id)
+  .then((user) => res.status(200).send(user))
+  .catch((err) => {
+    if (err.name === 'CastError') {
+      res.status(404).send({ message: 'Пользователь не найден' });
     }
-    return res.status(200).send(users);
-  })
-  .catch((err) => res.status(400).send(err));
+    res.status(500).send({ message: 'Ошибка сервера' });
+  });
 
-const getProfile = (req, res) => getDataFromFile(dataPath)
-  .then((users) => {
-    if (!users) {
-      return res.status(500).send({ message: 'Запрашиваемый ресурс не найден' });
+const createProfile = (req, res) => UserModel.create(req.body)
+  .then((user) => res.status(200).send(user))
+  .catch((err) => {
+    if (err.name === 'ValidationError') {
+      res.status(400).send({ message: 'Некорректные данные' });
     }
-    return users.find((user) => user._id === req.params.id);
-  })
-  .then((user) => {
-    if (!user) {
-      return res.status(404).send({ message: 'Пользователь не найден' });
-    }
-    return res.status(200).send(user);
-  })
-  .catch((err) => res.status(400).send(err));
+    res.status(500).send({ message: 'Ошибка сервера' });
+  });
 
-module.exports = { getUsers, getProfile };
+const updateProfile = (req, res) => UserModel.findByIdAndUpdate(req.user._id, req.body,
+  { new: true, runValidators: true })
+  .then((user) => res.status(200).send(user))
+  .catch((err) => {
+    if (err.name === 'ValidationError') {
+      res.status(400).send({ message: 'Некорректные данные' });
+    } else if (err.name === 'CastError') {
+      res.status(404).send({ message: 'Пользователь не найден' });
+    }
+    res.status(500).send({ message: 'Ошибка сервера' });
+  });
+
+const updateAvatar = (req, res) => UserModel.findByIdAndUpdate(req.user._id, req.body,
+  { new: true, runValidators: true })
+  .then((user) => res.status(200).send(user))
+  .catch((err) => {
+    if (err.name === 'ValidationError') {
+      res.status(400).send({ message: 'Некорректные данные' });
+    } else if (err.name === 'CastError') {
+      res.status(404).send({ message: 'Пользователь не найден' });
+    }
+    res.status(500).send({ message: 'Ошибка сервера' });
+  });
+
+module.exports = {
+  getUsers, getProfile, createProfile, updateProfile, updateAvatar,
+};
