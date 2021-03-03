@@ -19,11 +19,14 @@ const app = express();
 
 app.use((req, res, next) => {
   req.user = {
-    _id: '603c81f77327503b8d1b11ed',
+    _id: '603f348379e34e6c87d2255e',
   };
   next();
 });
+
 app.use(bodyParser.json());
 app.use('/', usersRouter, cardsRouter);
-
+app.use('*', (req, res) => {
+  res.status(404).send({ message: 'Страница не найдена' });
+});
 app.listen(PORT);
